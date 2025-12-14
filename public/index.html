@@ -3,21 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>To Do List Web Application</title>
+    <title>To Do List</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-    <h1>To Do List</h1>
-    <div id="todo-list">
-        <ul id="tasks">
-            <!-- Tasks will be added here -->
-             
-        </ul>
+    <div class="container">
+        <div class="header">
+            <h1>✓ My Tasks</h1>
+            <p class="subtitle">Stay organized and productive</p>
+        </div>
+        <div class="content">
+            <form id="task-form">
+                <input type="text" id="task-input" placeholder="Add a new task..." autocomplete="off">
+                <button type="submit">Add</button>
+            </form>
+            <div id="tasks-container">
+                <ul id="tasks"></ul>
+            </div>
+            <div class="task-count">
+                <span id="task-stats">No tasks yet</span>
+            </div>
+        </div>
     </div>
-    <form id="task-form">
-        <input type="text" id="task-input" placeholder="Enter a task">
-        <button type="submit">Add Task</button>
-    </form>
     <script src="./js/script.js"></script>
 </body>
 </html>

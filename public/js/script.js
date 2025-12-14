@@ -1,72 +1,99 @@
-// backend/server.js
-const express = require('express');
-const fs = require('fs'); // Import File System module for reading/writing files
-const path = require('path');
+const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const taskList = document.getElementById('tasks');
+        const taskCount = document.getElementById('task-stats');
+        const tasksContainer = document.getElementById('tasks-container');
 
-const app = express();
-const port = 3000;
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 
-// --- Middlewares ---
-// Allows Express to read JSON data from the request body
-app.use(express.json()); 
-// Serves static frontend files from the 'public' folder
-app.use(express.static('public')); 
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
 
-// Define the path to your data file
-const TODOS_FILE = path.join(__dirname, 'todos.json');
+        function updateTaskCount() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.done).length;
+            if (total === 0) {
+                taskCount.textContent = 'No tasks yet';
+            } else {
+                taskCount.textContent = `${completed} of ${total} completed`;
+            }
+        }
 
-// --- Helper Functions for File I/O ---
+        function renderTasks() {
+            taskList.innerHTML = '';
+            
+            if (tasks.length === 0) {
+                tasksContainer.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        <p>No tasks yet. Add one to get started!</p>
+                    </div>
+                `;
+                return;
+            }
 
-// Reads the todos from the file
-const readTodos = () => {
-    try {
-        const data = fs.readFileSync(TODOS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error("Error reading todos file. Initializing with empty array.", error.message);
-        return [];
-    }
-};
+            tasksContainer.innerHTML = '<ul id="tasks"></ul>';
+            const newTaskList = document.getElementById('tasks');
 
-// Writes the given array of todos to the file
-const writeTodos = (todos) => {
-    fs.writeFileSync(TODOS_FILE, JSON.stringify(todos, null, 2), 'utf8');
-};
+            tasks.forEach((task, index) => {
+                const li = document.createElement('li');
+                li.className = `task ${task.done ? 'done' : ''}`;
+                li.innerHTML = `
+                    <input type="checkbox" class="checkbox" ${task.done ? 'checked' : ''}>
+                    <span class="task-text">${escapeHtml(task.text)}</span>
+                    <button type="button" class="delete-btn">Delete</button>
+                `;
 
-// --- API Routes ---
+                const checkbox = li.querySelector('.checkbox');
+                const deleteBtn = li.querySelector('.delete-btn');
 
-// GET /todos: Fetch all tasks
-app.get('/todos', (req, res) => {
-    const todos = readTodos();
-    res.json(todos);
-});
+                checkbox.addEventListener('change', () => {
+                    tasks[index].done = checkbox.checked;
+                    saveTasks();
+                    renderTasks();
+                });
 
-// POST /todos: Add a new task
-app.post('/todos', (req, res) => {
-    const todos = readTodos();
-    const newTaskText = req.body.text;
-    
-    // Create the new task object with a unique ID
-    const newId = todos.length > 0 ? Math.max(...todos.map(t => t.id)) + 1 : 1;
-    
-    const newTask = { 
-        id: newId, 
-        text: newTaskText, 
-        completed: false 
-    };
-    
-    // Add the new task to the array
-    todos.push(newTask);
-    
-    // Save the updated array back to the file
-    writeTodos(todos);
-    
-    // Respond to the client with the saved task
-    res.status(201).json({ message: 'Task added successfully!', task: newTask });
-});
+                deleteBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    tasks.splice(index, 1);
+                    saveTasks();
+                    renderTasks();
+                });
 
+                newTaskList.appendChild(li);
+            });
 
-// --- Start Server ---
-app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
-});
+            updateTaskCount();
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = taskInput.value.trim();
+
+            if (text === '') {
+                taskInput.focus();
+                return;
+            }
+
+            tasks.push({ text, done: false });
+            saveTasks();
+            renderTasks();
+            taskInput.value = '';
+            taskInput.focus();
+        });
+
+        renderTasks();
